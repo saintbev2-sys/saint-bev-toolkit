@@ -1,0 +1,588 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Saint Bev Dev Toolkit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg:#14110d;
+    --bg-panel:#1b170f;
+    --bg-inset:#0f0c08;
+    --amber:#ffb020;
+    --amber-dim:#8a5b12;
+    --amber-glow:rgba(255,176,32,0.35);
+    --cyan:#52d7de;
+    --text:#f3eee2;
+    --text-muted:#8c8577;
+    --ok:#6fcf7c;
+    --err:#ff6b5e;
+    --border:#332b1d;
+    --mono:'JetBrains Mono', monospace;
+    --sans:'Manrope', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(ellipse at top, #1d1810 0%, var(--bg) 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{
+    max-width:720px;
+    margin:0 auto;
+    padding:20px 16px 64px;
+  }
+
+  /* ---------- header ---------- */
+  header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:12px;
+    padding-bottom:16px;
+    border-bottom:1px solid var(--border);
+    margin-bottom:18px;
+  }
+  .brand-eyebrow{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.16em;
+    color:var(--amber-dim);
+    text-transform:uppercase;
+    margin:0 0 4px;
+  }
+  h1{
+    font-family:var(--mono);
+    font-weight:700;
+    font-size:22px;
+    letter-spacing:0.02em;
+    margin:0;
+    color:var(--text);
+  }
+  h1 span{color:var(--amber);}
+  .status{
+    text-align:right;
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--text-muted);
+    line-height:1.6;
+    white-space:nowrap;
+  }
+  .status .dot{
+    display:inline-block;
+    width:7px;height:7px;
+    border-radius:50%;
+    background:var(--ok);
+    margin-right:6px;
+    box-shadow:0 0 6px var(--ok);
+    animation:blink 2.4s ease-in-out infinite;
+  }
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0.35;}}
+
+  /* ---------- signature scope ---------- */
+  .scope{
+    position:relative;
+    background:var(--bg-inset);
+    border:1px solid var(--border);
+    border-radius:6px;
+    margin-bottom:20px;
+    overflow:hidden;
+    height:64px;
+  }
+  .scope canvas{display:block;width:100%;height:100%;}
+  .scope-label{
+    position:absolute;
+    top:6px; left:10px;
+    font-family:var(--mono);
+    font-size:9px;
+    letter-spacing:0.14em;
+    color:var(--amber-dim);
+    text-transform:uppercase;
+    pointer-events:none;
+  }
+
+  /* ---------- tabs ---------- */
+  .tabs{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    margin-bottom:18px;
+  }
+  .tab{
+    font-family:var(--mono);
+    font-size:11px;
+    letter-spacing:0.04em;
+    text-align:left;
+    color:var(--text-muted);
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:10px 10px;
+    cursor:pointer;
+    transition:border-color .15s ease, color .15s ease, box-shadow .15s ease;
+  }
+  .tab .num{color:var(--amber-dim); display:block; font-size:10px; margin-bottom:3px;}
+  .tab.active{
+    color:var(--text);
+    border-color:var(--amber);
+    box-shadow:0 0 0 1px var(--amber-glow) inset, 0 0 14px -4px var(--amber-glow);
+  }
+  .tab.active .num{color:var(--amber);}
+  .tab:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+
+  /* ---------- panel ---------- */
+  .panel{
+    background:var(--bg-panel);
+    border:1px solid var(--border);
+    border-radius:8px;
+    padding:18px 16px 20px;
+    display:none;
+  }
+  .panel.active{display:block;}
+  .panel h2{
+    font-family:var(--mono);
+    font-size:14px;
+    letter-spacing:0.03em;
+    margin:0 0 4px;
+    color:var(--text);
+  }
+  .panel .desc{
+    font-size:13px;
+    color:var(--text-muted);
+    line-height:1.55;
+    margin:0 0 16px;
+  }
+
+  /* ---------- shared controls ---------- */
+  .btn{
+    font-family:var(--mono);
+    font-size:12px;
+    letter-spacing:0.03em;
+    color:var(--bg);
+    background:var(--amber);
+    border:none;
+    border-radius:5px;
+    padding:10px 16px;
+    cursor:pointer;
+    transition:filter .15s ease;
+  }
+  .btn:hover{filter:brightness(1.1);}
+  .btn:active{filter:brightness(0.92);}
+  .btn.ghost{
+    background:transparent;
+    color:var(--text);
+    border:1px solid var(--border);
+  }
+  .btn.ghost:hover{border-color:var(--amber-dim);}
+  .btn:focus-visible{outline:2px solid var(--cyan); outline-offset:2px;}
+  .btn:disabled{opacity:0.4; cursor:not-allowed; filter:none;}
+
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+
+  /* dropzone */
+  .dropzone{
+    border:1px dashed var(--border);
+    border-radius:6px;
+    padding:26px 14px;
+    text-align:center;
+    color:var(--text-muted);
+    font-size:13px;
+    margin-bottom:14px;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .dropzone.drag{border-color:var(--amber); background:rgba(255,176,32,0.05);}
+  .dropzone .filename{
+    font-family:var(--mono);
+    color:var(--text);
+    font-size:12px;
+    margin-top:8px;
+    word-break:break-all;
+  }
+
+  /* console/log surface */
+  .console{
+    background:var(--bg-inset);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:12px;
+    font-family:var(--mono);
+    font-size:12px;
+    line-height:1.65;
+    max-height:280px;
+    overflow-y:auto;
+    margin-top:14px;
+  }
+  .console .empty{color:var(--text-muted);}
+  .line{white-space:pre-wrap; word-break:break-all;}
+  .line.ok{color:var(--ok);}
+  .line.err{color:var(--err);}
+  .line.warn{color:var(--amber);}
+  .line.dim{color:var(--text-muted);}
+
+  .summary{
+    display:flex; gap:18px; flex-wrap:wrap;
+    font-family:var(--mono); font-size:11px; color:var(--text-muted);
+    margin-top:12px;
+  }
+  .summary b{color:var(--text); font-weight:600;}
+
+  /* proxy panel specifics */
+  .cmdblock{
+    background:var(--bg-inset);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:12px 14px;
+    font-family:var(--mono);
+    font-size:12px;
+    color:var(--cyan);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-bottom:12px;
+  }
+  .cmdblock code{word-break:break-all;}
+  .copybtn{
+    font-family:var(--mono);
+    font-size:11px;
+    color:var(--text-muted);
+    background:transparent;
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:5px 9px;
+    cursor:pointer;
+    white-space:nowrap;
+    flex-shrink:0;
+  }
+  .copybtn:hover{border-color:var(--amber-dim); color:var(--text);}
+  .note{
+    font-size:12px;
+    color:var(--text-muted);
+    background:var(--bg-inset);
+    border-left:2px solid var(--amber-dim);
+    padding:10px 12px;
+    border-radius:0 5px 5px 0;
+    margin-top:14px;
+    line-height:1.55;
+  }
+  .note b{color:var(--amber);}
+
+  footer{
+    text-align:center;
+    font-family:var(--mono);
+    font-size:10px;
+    letter-spacing:0.1em;
+    color:var(--text-muted);
+    margin-top:26px;
+    text-transform:uppercase;
+  }
+
+  @media (max-width:420px){
+    .tabs{grid-template-columns:1fr;}
+    h1{font-size:19px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .status .dot{animation:none;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <p class="brand-eyebrow">Saint Bev Ecosystem // Local Tools</p>
+      <h1>DEV <span>TOOLKIT</span></h1>
+    </div>
+    <div class="status">
+      <div><span class="dot"></span>2 run in-browser</div>
+      <div>1 requires terminal</div>
+    </div>
+  </header>
+
+  <div class="scope">
+    <span class="scope-label">signal</span>
+    <canvas id="scope"></canvas>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab active" data-panel="archive" role="tab" aria-selected="true"><span class="num">01</span>Archive Auditor</button>
+    <button class="tab" data-panel="profiler" role="tab" aria-selected="false"><span class="num">02</span>Exec Profiler</button>
+    <button class="tab" data-panel="proxy" role="tab" aria-selected="false"><span class="num">03</span>Debug Proxy</button>
+  </div>
+
+  <!-- ARCHIVE AUDITOR -->
+  <section class="panel active" id="panel-archive">
+    <h2>Archive Auditor</h2>
+    <p class="desc">Drop a .zip and scan its contents before anything gets extracted. Flags unsafe paths (path traversal attempts) so a bad archive never touches your filesystem. Runs entirely in this page — nothing is uploaded anywhere.</p>
+
+    <div class="dropzone" id="dropzone">
+      Drop a .zip here, or
+      <label for="fileInput" style="color:var(--amber); cursor:pointer; text-decoration:underline;">choose a file</label>
+      <input type="file" id="fileInput" accept=".zip" style="display:none;">
+      <div class="filename" id="fileName"></div>
+    </div>
+
+    <div class="row">
+      <button class="btn ghost" id="clearArchive">Clear</button>
+    </div>
+
+    <div class="console" id="archiveConsole"><span class="empty">// awaiting archive</span></div>
+
+    <div class="summary" id="archiveSummary" style="display:none;">
+      <div>Files: <b id="sumFiles">0</b></div>
+      <div>Flagged: <b id="sumFlagged">0</b></div>
+      <div>Size: <b id="sumSize">0 KB</b></div>
+    </div>
+  </section>
+
+  <!-- EXECUTION PROFILER -->
+  <section class="panel" id="panel-profiler">
+    <h2>Execution Profiler</h2>
+    <p class="desc">Times a small batch of functions and logs duration, status, and a short trace id for each call — mirroring the wrapper pattern from the Python toolkit, running natively in JS here.</p>
+
+    <div class="row">
+      <button class="btn" id="runProfiler">Run profiled functions</button>
+      <button class="btn ghost" id="clearProfiler">Clear</button>
+    </div>
+
+    <div class="console" id="profilerConsole"><span class="empty">// no trace events yet</span></div>
+  </section>
+
+  <!-- DEBUG PROXY -->
+  <section class="panel" id="panel-proxy">
+    <h2>Debug Proxy</h2>
+    <p class="desc">Intercepts and logs raw HTTP traffic on a local socket. Browsers can't open TCP listeners for security reasons, so this one runs from the terminal, not this page — start it locally with:</p>
+
+    <div class="cmdblock">
+      <code id="proxyCmd">python3 saint_bev_toolkit.py</code>
+      <button class="copybtn" id="copyCmd">copy</button>
+    </div>
+    <p class="desc" style="margin-bottom:8px;">Then select <b style="color:var(--text);">3</b> from the menu. It listens on <b style="color:var(--text);">127.0.0.1:8888</b> and writes every request/response to <b style="color:var(--text);">proxy_trace.log</b>.</p>
+
+    <div class="console">
+      <span class="line dim">--- DEBUG PROXY ---</span>
+      <span class="line dim">Listening on 127.0.0.1:8888</span>
+      <span class="line dim">Logging to proxy_trace.log</span>
+      <span class="line dim">Press Ctrl+C to stop.</span>
+      <span class="line ok">[+] Connection from ('127.0.0.1', 51422)</span>
+      <span class="line">[14:02:11] &gt;&gt; CLIENT 512 bytes</span>
+      <span class="line">[14:02:11] &gt;&gt; example.com:80 512 bytes</span>
+      <span class="line">[14:02:11] &lt;&lt; RESPONSE 2048 bytes</span>
+    </div>
+
+    <div class="note"><b>Example output shown above</b> — this is a static preview of the log format, not a live feed. Run the command on your machine to see real traffic.</div>
+  </section>
+
+  <footer>Saint Bev Ecosystem</footer>
+</div>
+
+<script>
+  /* ---------------- oscilloscope signature ---------------- */
+  const canvas = document.getElementById('scope');
+  const ctx = canvas.getContext('2d');
+  let amp = 6, ampTarget = 6, t = 0;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function resizeCanvas(){
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * devicePixelRatio;
+    canvas.height = rect.height * devicePixelRatio;
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function drawScope(){
+    const w = canvas.width, h = canvas.height, mid = h/2;
+    ctx.clearRect(0,0,w,h);
+    ctx.strokeStyle = '#ffb020';
+    ctx.lineWidth = 2 * devicePixelRatio;
+    ctx.beginPath();
+    amp += (ampTarget - amp) * 0.06;
+    for(let x=0; x<=w; x+=4){
+      const y = mid + Math.sin((x*0.04)+t) * amp * devicePixelRatio
+                 + Math.sin((x*0.11)+t*1.7) * (amp*0.3) * devicePixelRatio;
+      x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.shadowColor = 'rgba(255,176,32,0.6)';
+    ctx.shadowBlur = 6;
+    ctx.stroke();
+    t += reduceMotion ? 0 : 0.045;
+    if(!reduceMotion) requestAnimationFrame(drawScope);
+  }
+  drawScope();
+  if(reduceMotion){ ampTarget = 6; drawScope(); }
+
+  function pulse(){
+    ampTarget = 22;
+    setTimeout(()=>{ ampTarget = 6; }, 550);
+  }
+
+  /* ---------------- tabs ---------------- */
+  const tabs = document.querySelectorAll('.tab');
+  const panels = document.querySelectorAll('.panel');
+  tabs.forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      tabs.forEach(t=>{t.classList.remove('active'); t.setAttribute('aria-selected','false');});
+      panels.forEach(p=>p.classList.remove('active'));
+      tab.classList.add('active');
+      tab.setAttribute('aria-selected','true');
+      document.getElementById('panel-'+tab.dataset.panel).classList.add('active');
+    });
+  });
+
+  /* ---------------- ARCHIVE AUDITOR ---------------- */
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const fileNameEl = document.getElementById('fileName');
+  const archiveConsole = document.getElementById('archiveConsole');
+  const archiveSummary = document.getElementById('archiveSummary');
+
+  function logLine(container, text, cls){
+    const span = document.createElement('div');
+    span.className = 'line ' + (cls||'');
+    span.textContent = text;
+    container.appendChild(span);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  ['dragenter','dragover'].forEach(evt=>{
+    dropzone.addEventListener(evt, e=>{ e.preventDefault(); dropzone.classList.add('drag'); });
+  });
+  ['dragleave','drop'].forEach(evt=>{
+    dropzone.addEventListener(evt, e=>{ e.preventDefault(); dropzone.classList.remove('drag'); });
+  });
+  dropzone.addEventListener('drop', e=>{
+    const file = e.dataTransfer.files[0];
+    if(file) handleArchive(file);
+  });
+  fileInput.addEventListener('change', e=>{
+    const file = e.target.files[0];
+    if(file) handleArchive(file);
+  });
+  document.getElementById('clearArchive').addEventListener('click', ()=>{
+    archiveConsole.innerHTML = '<span class="empty">// awaiting archive</span>';
+    archiveSummary.style.display = 'none';
+    fileNameEl.textContent = '';
+    fileInput.value = '';
+  });
+
+  async function handleArchive(file){
+    pulse();
+    fileNameEl.textContent = file.name;
+    archiveConsole.innerHTML = '';
+    archiveSummary.style.display = 'none';
+
+    if(!file.name.toLowerCase().endsWith('.zip')){
+      logLine(archiveConsole, 'Rejected: not a .zip file', 'err');
+      return;
+    }
+    if(typeof JSZip === 'undefined'){
+      logLine(archiveConsole, 'JSZip failed to load — check network access.', 'err');
+      return;
+    }
+
+    logLine(archiveConsole, `Scanning ${file.name} ...`, 'dim');
+    let zip;
+    try{
+      zip = await JSZip.loadAsync(file);
+    }catch(err){
+      logLine(archiveConsole, 'Bad zip file: could not open archive.', 'err');
+      return;
+    }
+
+    let count = 0, flagged = 0, totalSize = 0;
+    const entries = Object.values(zip.files);
+    for(const entry of entries){
+      if(entry.dir) continue;
+      count++;
+      const unsafe = entry.name.includes('..');
+      if(unsafe){
+        flagged++;
+        logLine(archiveConsole, `  [!] unsafe path: ${entry.name}`, 'err');
+      } else {
+        logLine(archiveConsole, `  [+] ${entry.name}`, 'ok');
+      }
+      try{
+        const size = entry._data ? entry._data.uncompressedSize : 0;
+        totalSize += size || 0;
+      }catch(e){}
+    }
+
+    logLine(archiveConsole, `Done. ${count} file(s) scanned.`, 'warn');
+    archiveSummary.style.display = 'flex';
+    document.getElementById('sumFiles').textContent = count;
+    document.getElementById('sumFlagged').textContent = flagged;
+    document.getElementById('sumSize').textContent = (totalSize/1024).toFixed(1) + ' KB';
+  }
+
+  /* ---------------- EXECUTION PROFILER ---------------- */
+  const profilerConsole = document.getElementById('profilerConsole');
+
+  function makeId(){
+    return Math.random().toString(16).slice(2,10);
+  }
+
+  async function profile(name, fn){
+    const start = performance.now();
+    let error = null;
+    try{
+      await fn();
+    }catch(e){
+      error = e;
+    }
+    const duration = (performance.now() - start)/1000;
+    const id = makeId();
+    const ts = new Date().toISOString();
+    const status = error ? 'ERROR' : 'OK';
+    const cls = error ? 'err' : 'ok';
+    logLine(profilerConsole, `[${ts}] ${name} (${duration.toFixed(4)}s) [${status}] #${id}`, cls);
+  }
+
+  document.getElementById('runProfiler').addEventListener('click', async ()=>{
+    pulse();
+    profilerConsole.innerHTML = '';
+    logLine(profilerConsole, 'Running profiled functions...', 'dim');
+
+    await profile('example_fast', async ()=>{
+      let sum = 0;
+      for(let i=0;i<1000;i++) sum += i;
+    });
+
+    await profile('example_slow', async ()=>{
+      await new Promise(r=>setTimeout(r, 300));
+    });
+
+    await profile('example_error', async ()=>{
+      throw new Error('test error');
+    });
+
+    logLine(profilerConsole, 'Profiling complete.', 'warn');
+  });
+
+  document.getElementById('clearProfiler').addEventListener('click', ()=>{
+    profilerConsole.innerHTML = '<span class="empty">// no trace events yet</span>';
+  });
+
+  /* ---------------- DEBUG PROXY ---------------- */
+  document.getElementById('copyCmd').addEventListener('click', ()=>{
+    const cmd = document.getElementById('proxyCmd').textContent;
+    navigator.clipboard.writeText(cmd).then(()=>{
+      const btn = document.getElementById('copyCmd');
+      const original = btn.textContent;
+      btn.textContent = 'copied';
+      setTimeout(()=>{ btn.textContent = original; }, 1200);
+    });
+  });
+</script>
+</body>
+</html>
